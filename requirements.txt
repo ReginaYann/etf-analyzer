@@ -1,0 +1,3 @@
+# 默认零第三方依赖即可跑通 Demo。
+# 使用 OpenAI 时请: pip install openai
+# openai>=1.0.0
