@@ -1,5 +1,8 @@
 """
-从 AKShare 拉取证券名称、类型、行业/板块等（东财全市场 spot + 个股资料）。
+从 AKShare 拉取证券名称、类型、行业/板块等。
+
+性能说明：历史上使用 stock_zh_a_spot_em（全市场 A 股）会导致单次请求接近 1 分钟。
+股票侧已改为仅调用 stock_individual_info_em（单标的）；ETF 仍用 fund_etf_spot_em 全表但带较长缓存。
 """
 
 from __future__ import annotations
@@ -9,11 +12,19 @@ from typing import Any
 
 import pandas as pd
 
+from ..memory.symbol_meta_cache import SymbolMetaCache
 from .akshare_daily import _normalize_code, _pick_col, _prefer_etf_daily_api
 
-_SPOT_TTL_SEC = 90.0
+
+def _should_persist_profile(p: dict[str, Any]) -> bool:
+    if str(p.get("name") or "").strip():
+        return True
+    at = str(p.get("asset_type") or "unknown")
+    return at not in ("", "unknown")
+
+# ETF 全表体积小于 A 股全市场；缓存久一点避免连续分析重复拉取
+_SPOT_ETF_TTL_SEC = 900.0
 _etf_spot_cache: tuple[float, pd.DataFrame] | None = None
-_stock_spot_cache: tuple[float, pd.DataFrame] | None = None
 
 
 def _etf_spot_df() -> pd.DataFrame:
@@ -21,24 +32,11 @@ def _etf_spot_df() -> pd.DataFrame:
     import akshare as ak
 
     now = time.monotonic()
-    if _etf_spot_cache is not None and now - _etf_spot_cache[0] < _SPOT_TTL_SEC:
+    if _etf_spot_cache is not None and now - _etf_spot_cache[0] < _SPOT_ETF_TTL_SEC:
         return _etf_spot_cache[1]
     df = ak.fund_etf_spot_em()
     df = df if isinstance(df, pd.DataFrame) else pd.DataFrame()
     _etf_spot_cache = (now, df)
-    return df
-
-
-def _stock_spot_df() -> pd.DataFrame:
-    global _stock_spot_cache
-    import akshare as ak
-
-    now = time.monotonic()
-    if _stock_spot_cache is not None and now - _stock_spot_cache[0] < _SPOT_TTL_SEC:
-        return _stock_spot_cache[1]
-    df = ak.stock_zh_a_spot_em()
-    df = df if isinstance(df, pd.DataFrame) else pd.DataFrame()
-    _stock_spot_cache = (now, df)
     return df
 
 
@@ -76,9 +74,53 @@ def _info_em_to_dict(df: pd.DataFrame) -> dict[str, str]:
     return out
 
 
-def fetch_security_profile(code: str) -> dict[str, Any]:
+def _stock_meta_from_info_em(code: str) -> dict[str, Any] | None:
     """
-    返回名称、资产类型、行业、板块、概念摘要等；尽量与东财字段对齐。
+    单请求拉取股票简称/行业等；避免 stock_zh_a_spot_em 全市场接口。
+    若不像有效 A 股资料则返回 None。
+    """
+    import akshare as ak
+
+    try:
+        info = ak.stock_individual_info_em(symbol=code)
+        kv = _info_em_to_dict(info if isinstance(info, pd.DataFrame) else pd.DataFrame())
+    except Exception:  # noqa: BLE001
+        return None
+    if not kv:
+        return None
+    name = (
+        kv.get("股票简称")
+        or kv.get("股票名称")
+        or kv.get("证券简称")
+        or kv.get("名称")
+        or ""
+    )
+    industry = kv.get("行业", "") or kv.get("所属行业", "") or kv.get("证监会行业", "")
+    if not name.strip() and not industry.strip():
+        return None
+    conc = kv.get("概念板块") or kv.get("涉及概念") or kv.get("相关概念") or ""
+    return {
+        "name": name.strip(),
+        "asset_type": "stock",
+        "industry": industry,
+        "sector": kv.get("所属板块", "") or kv.get("板块", ""),
+        "listing_board": kv.get("上市板块", "")
+        or kv.get("市场类型", "")
+        or kv.get("板块", ""),
+        "concept": conc[:400] if conc else "",
+        "source": "akshare",
+    }
+
+
+def fetch_security_profile(
+    code: str,
+    *,
+    cache: SymbolMetaCache | None = None,
+    force_refresh: bool = False,
+) -> dict[str, Any]:
+    """
+    返回名称、资产类型、行业、板块、概念摘要等。
+    若提供 cache 且非 force_refresh，命中磁盘缓存则不再请求网络。
     """
     code = _normalize_code(code)
     out: dict[str, Any] = {
@@ -94,7 +136,21 @@ def fetch_security_profile(code: str) -> dict[str, Any]:
     if len(code) != 6 or not code.isdigit():
         return out
 
-    import akshare as ak
+    if cache is not None and not force_refresh:
+        hit = cache.get(code)
+        if hit is not None:
+            return {
+                "code": hit.get("code") or code,
+                "name": str(hit.get("name") or ""),
+                "asset_type": str(hit.get("asset_type") or "unknown"),
+                "industry": str(hit.get("industry") or ""),
+                "sector": str(hit.get("sector") or ""),
+                "concept": str(hit.get("concept") or ""),
+                "listing_board": str(hit.get("listing_board") or ""),
+                "fund_type_detail": str(hit.get("fund_type_detail") or ""),
+                "source": str(hit.get("source") or "disk_cache"),
+                "meta_source": "disk_cache",
+            }
 
     tried_etf = _prefer_etf_daily_api(code)
     if tried_etf:
@@ -105,14 +161,19 @@ def fetch_security_profile(code: str) -> dict[str, Any]:
             ft = _series_get(row, "基金类型", "类型", "跟踪指数")
             if ft:
                 out["fund_type_detail"] = ft
+            if cache is not None and _should_persist_profile(out):
+                cache.set_from_profile(code, out)
             return out
 
-    row = _row_match_code(_stock_spot_df(), code, "代码")
-    if row is not None:
-        out["name"] = _series_get(row, "名称")
-        out["asset_type"] = "stock"
+    # 股票：禁止再走全市场 spot，只用个股资料接口
+    sm = _stock_meta_from_info_em(code)
+    if sm is not None:
+        out.update(sm)
+        if cache is not None and _should_persist_profile(out):
+            cache.set_from_profile(code, out)
+        return out
 
-    if out["asset_type"] == "unknown" and not tried_etf:
+    if not tried_etf:
         row = _row_match_code(_etf_spot_df(), code, "基金代码", "代码")
         if row is not None:
             out["name"] = _series_get(row, "基金简称", "名称", "基金名称")
@@ -120,20 +181,12 @@ def fetch_security_profile(code: str) -> dict[str, Any]:
             ft = _series_get(row, "基金类型", "类型")
             if ft:
                 out["fund_type_detail"] = ft
+            if cache is not None and _should_persist_profile(out):
+                cache.set_from_profile(code, out)
             return out
 
-    if out["asset_type"] == "stock":
-        try:
-            info = ak.stock_individual_info_em(symbol=code)
-            kv = _info_em_to_dict(info if isinstance(info, pd.DataFrame) else pd.DataFrame())
-            out["industry"] = kv.get("行业", "") or kv.get("所属行业", "") or kv.get("证监会行业", "")
-            out["sector"] = kv.get("所属板块", "") or kv.get("板块", "")
-            out["listing_board"] = kv.get("上市板块", "") or kv.get("市场类型", "") or kv.get("板块", "")
-            conc = kv.get("概念板块") or kv.get("涉及概念") or kv.get("相关概念") or ""
-            out["concept"] = conc[:400] if conc else ""
-        except Exception:  # noqa: BLE001
-            pass
-
+    if cache is not None and _should_persist_profile(out):
+        cache.set_from_profile(code, out)
     return out
 
 

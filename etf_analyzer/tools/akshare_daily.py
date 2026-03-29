@@ -10,6 +10,8 @@ from typing import Any
 
 import pandas as pd
 
+from ..memory.symbol_meta_cache import SymbolMetaCache
+
 
 def _normalize_code(raw: str) -> str:
     s = "".join(c for c in (raw or "").strip().upper() if c.isalnum())
@@ -63,7 +65,13 @@ def _fetch_stock_daily(code: str, start_date: str, end_date: str) -> pd.DataFram
     return df if isinstance(df, pd.DataFrame) else pd.DataFrame()
 
 
-def fetch_daily_bars(code: str, lookback_calendar_days: int = 400) -> tuple[pd.DataFrame, str]:
+# 仅需最近 K 线算涨跌与收盘；过长的回溯会显著增大东财返回体积与耗时
+_DEFAULT_LOOKBACK_DAYS = 120
+
+
+def fetch_daily_bars(
+    code: str, lookback_calendar_days: int = _DEFAULT_LOOKBACK_DAYS
+) -> tuple[pd.DataFrame, str]:
     """
     返回 (按日期升序的 DataFrame, 数据源标记 etf|stock)。
     """
@@ -163,13 +171,27 @@ def _latest_metrics(df: pd.DataFrame) -> dict[str, Any]:
     }
 
 
-def get_daily_price_snapshot(etf_code: str, *, include_profile: bool = True) -> dict[str, Any]:
+def get_daily_price_snapshot(
+    etf_code: str,
+    *,
+    include_profile: bool = True,
+    lookback_calendar_days: int | None = None,
+    symbol_meta_cache: SymbolMetaCache | None = None,
+    force_refresh_symbol_meta: bool = False,
+) -> dict[str, Any]:
     """
     与 mock `get_etf_price` 对齐的字段，供 RuleEngine 使用。
     可选合并东财名称、类型、行业/板块（见 akshare_meta）。
+    lookback_calendar_days 默认使用模块内常量（与 Settings 默认值一致，由 registry 传入配置值）。
     """
     code = _normalize_code(etf_code)
-    df, kind = fetch_daily_bars(code)
+    lb = (
+        lookback_calendar_days
+        if lookback_calendar_days is not None
+        else _DEFAULT_LOOKBACK_DAYS
+    )
+    lb = max(5, min(int(lb), 3650))
+    df, kind = fetch_daily_bars(code, lookback_calendar_days=lb)
     m = _latest_metrics(df)
     base: dict[str, Any] = {
         "etf_code": code,
@@ -186,7 +208,11 @@ def get_daily_price_snapshot(etf_code: str, *, include_profile: bool = True) -> 
         try:
             from .akshare_meta import fetch_security_profile, merge_profile_into_price_dict
 
-            prof = fetch_security_profile(code)
+            prof = fetch_security_profile(
+                code,
+                cache=symbol_meta_cache,
+                force_refresh=force_refresh_symbol_meta,
+            )
             base = merge_profile_into_price_dict(base, prof)
         except Exception:  # noqa: BLE001
             pass

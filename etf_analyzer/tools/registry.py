@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from ..config import Settings, default_settings
+from ..memory.symbol_meta_cache import SymbolMetaCache
 
 
 def tool_result_ok(data: Any) -> dict[str, Any]:
@@ -43,19 +45,36 @@ class ToolRegistry:
         return sorted(self._tools.keys())
 
 
-def build_default_registry(settings: Settings | None = None) -> ToolRegistry:
+def build_default_registry(
+    settings: Settings | None = None,
+    symbol_meta_cache: SymbolMetaCache | None = None,
+) -> ToolRegistry:
     from .mock_data import get_etf_flow, get_etf_price
 
     cfg = settings if settings is not None else default_settings()
+    repo_root = Path(__file__).resolve().parents[2]
+    meta_cache = symbol_meta_cache or SymbolMetaCache(
+        repo_root / cfg.data_dir / "symbol_meta_cache.json"
+    )
 
     def get_etf_price_tool(etf_code: str) -> dict[str, Any]:
         if getattr(cfg, "use_akshare_daily", False):
             try:
                 from .akshare_daily import get_daily_price_snapshot
 
-                return get_daily_price_snapshot(etf_code, include_profile=True)
-            except Exception:
-                pass
+                return get_daily_price_snapshot(
+                    etf_code,
+                    include_profile=True,
+                    lookback_calendar_days=cfg.akshare_daily_lookback_days,
+                    symbol_meta_cache=meta_cache,
+                    force_refresh_symbol_meta=False,
+                )
+            except Exception as e:  # noqa: BLE001
+                out = get_etf_price(etf_code)
+                out["data_source_fallback"] = True
+                out["fallback_reason"] = "akshare_daily"
+                out["upstream_error"] = str(e)[:500]
+                return out
         return get_etf_price(etf_code)
 
     def get_etf_flow_tool(etf_code: str) -> dict[str, Any]:
@@ -64,8 +83,12 @@ def build_default_registry(settings: Settings | None = None) -> ToolRegistry:
                 from .akshare_flow import get_fund_flow_snapshot
 
                 return get_fund_flow_snapshot(etf_code)
-            except Exception:
-                pass
+            except Exception as e:  # noqa: BLE001
+                out = get_etf_flow(etf_code)
+                out["data_source_fallback"] = True
+                out["fallback_reason"] = "akshare_flow"
+                out["upstream_error"] = str(e)[:500]
+                return out
         return get_etf_flow(etf_code)
 
     reg = ToolRegistry()

@@ -27,15 +27,40 @@
       </form>
     </section>
 
+    <section class="card" id="card-trading-prefs">
+      <h2>交易偏好</h2>
+      <p class="hint">与 <code>etf_config.yaml</code> 中 <code>trading_preferences</code> 含义相同；此处保存会写入 <code>data/trading_preferences.json</code> 并优先生效。</p>
+      <form id="form-prefs" class="prefs-form">
+        <label>风险承受 <input id="tp-risk" type="text" placeholder="如 moderate / 保守" /></label>
+        <label>投资周期 <input id="tp-horizon" type="text" placeholder="如 long_term / 波段" /></label>
+        <label>单标的仓位上限（%） <input id="tp-maxpct" type="text" placeholder="留空表示不限制" /></label>
+        <label>规避行业（每行一条）<textarea id="tp-avoid-ind" rows="2" placeholder="每行一个行业"></textarea></label>
+        <label>规避关键词（每行一条）<textarea id="tp-avoid-kw" rows="2"></textarea></label>
+        <label>关注主题（每行一条）<textarea id="tp-focus" rows="2"></textarea></label>
+        <label>硬性规则（多行）<textarea id="tp-must" rows="4" placeholder="多行文本，模型必须遵守"></textarea></label>
+        <button type="submit">保存交易偏好</button>
+      </form>
+    </section>
+
     <section class="card">
-      <h2>我的自选 <button type="button" id="btn-refresh" class="btn-ghost">刷新</button></h2>
+      <h2 class="watchlist-toolbar">
+        我的自选
+        <span class="watchlist-actions">
+          <button type="button" id="btn-refresh-meta" class="btn-ghost" title="从数据源重新拉取简称、行业、板块（较慢）">刷新资料</button>
+          <button type="button" id="btn-refresh" class="btn-ghost">刷新列表</button>
+        </span>
+      </h2>
       <div id="watchlist-empty" class="hint hidden">暂无自选，请在上方添加。</div>
+      <p class="hint watchlist-holding-hint hidden" id="watchlist-holding-hint">第二行可填写持仓成本、数量与备注；点「保存持仓」后，分析时会一并交给大模型参考。</p>
       <table class="table" id="tbl-watchlist">
         <thead>
           <tr>
             <th>代码</th>
-            <th>名称</th>
+            <th>自选名称</th>
             <th>类型</th>
+            <th>资料简称</th>
+            <th>行业</th>
+            <th>板块</th>
             <th></th>
           </tr>
         </thead>
@@ -46,6 +71,7 @@
     <section class="card">
       <h2>分析结果</h2>
       <p id="analysis-placeholder" class="hint">点击自选行的「分析」查看结构化决策。</p>
+      <div id="analysis-issues" class="analysis-issues hidden" aria-live="polite"></div>
       <pre id="analysis-json" class="json-out hidden"></pre>
       <details id="analysis-steps-wrap" class="hidden">
         <summary>Agent 步进</summary>

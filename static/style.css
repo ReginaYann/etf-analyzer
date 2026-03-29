@@ -27,7 +27,7 @@ a {
 
 .header {
   padding: 1.5rem 1.25rem 0.5rem;
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
@@ -44,7 +44,7 @@ a {
 }
 
 .layout {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 1rem 1.25rem 3rem;
   display: flex;
@@ -65,6 +65,106 @@ a {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.card h2.watchlist-toolbar {
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+
+.watchlist-actions {
+  display: flex;
+  gap: 0.35rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.table td.cell-meta {
+  max-width: 160px;
+  color: var(--muted);
+  font-size: 0.85rem;
+  word-break: break-word;
+  vertical-align: top;
+}
+
+.watchlist-holding-hint {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+}
+
+.watchlist-holding-row td.holding-cell {
+  background: rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid var(--border);
+  padding: 0.5rem 0.4rem 0.65rem;
+}
+
+.holding-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: flex-end;
+}
+
+.holding-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.holding-field input {
+  min-width: 6rem;
+  padding: 0.35rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #121820;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.holding-field.holding-notes {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+}
+
+.holding-field.holding-notes input {
+  min-width: 100%;
+}
+
+.prefs-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-width: 42rem;
+}
+
+.prefs-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.prefs-form input[type="text"],
+.prefs-form textarea {
+  padding: 0.4rem 0.55rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: #121820;
+  color: var(--text);
+  font-size: 0.88rem;
+}
+
+.prefs-form textarea {
+  resize: vertical;
+  min-height: 2.5rem;
+}
+
+#card-trading-prefs code {
+  font-size: 0.8rem;
+  color: var(--muted);
 }
 
 .form-row {
@@ -185,9 +285,54 @@ summary {
 }
 
 .footer {
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
   padding: 0 1.25rem 2rem;
   font-size: 0.85rem;
   color: var(--muted);
+}
+
+.analysis-issues {
+  margin-bottom: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.issue-item {
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.88rem;
+  border: 1px solid var(--border);
+}
+
+.issue-item strong {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.92rem;
+}
+
+.issue-item p {
+  margin: 0;
+  color: var(--muted);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.issue-error {
+  border-color: rgba(248, 81, 73, 0.55);
+  background: rgba(248, 81, 73, 0.12);
+}
+
+.issue-error strong {
+  color: var(--danger);
+}
+
+.issue-warn {
+  border-color: rgba(210, 153, 34, 0.5);
+  background: rgba(210, 153, 34, 0.1);
+}
+
+.issue-warn strong {
+  color: #e3b341;
 }

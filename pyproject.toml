@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-llm = ["openai>=1.0.0"]
+llm = ["openai>=1.0.0", "python-dotenv>=1.0.0"]
 web = ["fastapi>=0.109.0", "uvicorn[standard]>=0.27.0"]
 akshare = ["akshare>=1.12.0"]
 

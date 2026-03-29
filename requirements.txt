@@ -2,5 +2,5 @@
 # 仅拷贝源码运行时: pip install pyyaml
 # Web：pip install fastapi "uvicorn[standard]"
 # 日线：pip install akshare
-# OpenAI：pip install openai
+# 大模型：pip install openai python-dotenv
 # 或：pip install -e ".[web]"  /  ".[akshare]"  /  ".[llm]"

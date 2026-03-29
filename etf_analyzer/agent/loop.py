@@ -93,10 +93,16 @@ class AgentLoop:
                 continue
 
             if plan.kind == "synthesize":
+                pos_ctx: dict[str, Any] | None = None
+                if self._memory is not None:
+                    w = self._memory.get_watchlist_item(code)
+                    if w is not None:
+                        pos_ctx = w.position_context_for_llm()
                 syn = self._synthesizer.synthesize(
                     etf_code=code,
                     price=state.price,
                     flow=state.flow,
+                    position_context=pos_ctx,
                 )
                 state.synthesis_result = syn
                 logs.append(

@@ -17,6 +17,11 @@ data/
 etf_config.yaml
 etf_config.local.yaml
 
+# 环境变量文件（勿提交密钥）
+.env
+.env.local
+*.secrets.yaml
+
 # IDE
 .idea/
 .vscode/
