@@ -31,7 +31,7 @@ def _memory_store(settings: Settings) -> MemoryStore:
 
 
 def _build_agent(memory: MemoryStore, settings: Settings) -> AgentLoop:
-    tools = build_default_registry()
+    tools = build_default_registry(settings)
     llm = create_llm_client(
         use_mock=settings.use_mock_llm,
         api_key=settings.openai_api_key,

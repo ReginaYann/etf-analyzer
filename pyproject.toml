@@ -8,11 +8,14 @@ version = "0.1.0"
 description = "可扩展的 ETF 分析 Agent（工具调用 + Memory + 规则/LLM 合成）"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "pyyaml>=6.0.1",
+]
 
 [project.optional-dependencies]
 llm = ["openai>=1.0.0"]
 web = ["fastapi>=0.109.0", "uvicorn[standard]>=0.27.0"]
+akshare = ["akshare>=1.12.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]

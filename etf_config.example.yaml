@@ -1,0 +1,17 @@
+# 复制为 etf_config.yaml 后修改（etf_config.yaml 已加入 .gitignore，避免把密钥提交进仓库）
+# 也可通过环境变量 ETF_CONFIG_PATH 指定任意路径的配置文件。
+#
+# 优先级（后者覆盖前者）：代码默认值 → 本文件 → 环境变量
+
+data_dir: data
+memory_file: watchlist_memory.json
+
+# OpenAI（敏感信息建议只用环境变量 OPENAI_API_KEY）
+openai_api_key: null
+openai_model: gpt-4o-mini
+use_mock_llm: true
+
+max_agent_steps: 12
+
+# 是否优先用 AKShare：日线价格+证券档案+主力资金流（失败仍回退 Mock）
+use_akshare_daily: true

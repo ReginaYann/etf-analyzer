@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from ..analysis.synthesizer import DecisionSynthesizer
-from ..config import Settings
+from ..config import Settings, default_settings
 from ..memory.store import AnalysisRecord, MemoryStore
 from ..tools.registry import ToolRegistry
 from .planner import plan_next_step
@@ -41,7 +41,7 @@ class AgentLoop:
     ) -> None:
         self._tools = tools
         self._synthesizer = synthesizer
-        self._settings = settings or Settings()
+        self._settings = settings or default_settings()
         self._memory = memory
 
     def run(

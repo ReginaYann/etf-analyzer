@@ -13,6 +13,10 @@ build/
 # 本地运行生成的数据（可选：若希望仓库带示例 JSON 可删掉下一行）
 data/
 
+# 本地配置（从 etf_config.example.yaml 复制）
+etf_config.yaml
+etf_config.local.yaml
+
 # IDE
 .idea/
 .vscode/

@@ -44,14 +44,26 @@ class MockLLMClient(LLMClient):
         rule_signals: dict[str, Any],
         rule_decision: str,
     ) -> str:
-        parts = [f"[MockLLM] 标的 {etf_code}：规则倾向 {rule_decision}。"]
+        label = price.get("security_name") or etf_code
+        meta_bits = []
+        if price.get("asset_type"):
+            meta_bits.append(f"类型={price.get('asset_type')}")
+        if price.get("industry"):
+            meta_bits.append(f"行业={price.get('industry')}")
+        if price.get("sector"):
+            meta_bits.append(f"板块={price.get('sector')}")
+        meta_s = ("（" + "，".join(meta_bits) + "）") if meta_bits else ""
+        parts = [f"[MockLLM] 标的 {label}{meta_s}：规则倾向 {rule_decision}。"]
         if price:
             parts.append(
                 f"价格涨跌 {price.get('change_pct')}% ，最新价 {price.get('last')}。"
             )
         if flow:
+            src = flow.get("source", "mock")
+            fd = flow.get("flow_date")
+            fd_s = f"，日期{fd}" if fd else ""
             parts.append(
-                f"主力净流入约 {flow.get('main_force_net_wan')} 万元（mock）。"
+                f"主力净流入约 {flow.get('main_force_net_wan')} 万元（{src}{fd_s}）。"
             )
         parts.append(f"规则信号：趋势={rule_signals.get('price_trend')}，资金流={rule_signals.get('flow_bias')}。")
         return " ".join(parts)

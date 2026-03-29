@@ -29,7 +29,7 @@ def main() -> None:
     print("当前自选:", memory.watchlist)
 
     # 2) 组装 Agent（工具注册表 + 合成器 + Loop）
-    tools = build_default_registry()
+    tools = build_default_registry(settings)
     llm = create_llm_client(
         use_mock=settings.use_mock_llm,
         api_key=settings.openai_api_key,

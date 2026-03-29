@@ -5,6 +5,8 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Any
 
+from ..config import Settings, default_settings
+
 
 def tool_result_ok(data: Any) -> dict[str, Any]:
     return {"ok": True, "data": data}
@@ -41,10 +43,32 @@ class ToolRegistry:
         return sorted(self._tools.keys())
 
 
-def build_default_registry() -> ToolRegistry:
+def build_default_registry(settings: Settings | None = None) -> ToolRegistry:
     from .mock_data import get_etf_flow, get_etf_price
 
+    cfg = settings if settings is not None else default_settings()
+
+    def get_etf_price_tool(etf_code: str) -> dict[str, Any]:
+        if getattr(cfg, "use_akshare_daily", False):
+            try:
+                from .akshare_daily import get_daily_price_snapshot
+
+                return get_daily_price_snapshot(etf_code, include_profile=True)
+            except Exception:
+                pass
+        return get_etf_price(etf_code)
+
+    def get_etf_flow_tool(etf_code: str) -> dict[str, Any]:
+        if getattr(cfg, "use_akshare_daily", False):
+            try:
+                from .akshare_flow import get_fund_flow_snapshot
+
+                return get_fund_flow_snapshot(etf_code)
+            except Exception:
+                pass
+        return get_etf_flow(etf_code)
+
     reg = ToolRegistry()
-    reg.register("get_etf_price", lambda etf_code: get_etf_price(etf_code))
-    reg.register("get_etf_flow", lambda etf_code: get_etf_flow(etf_code))
+    reg.register("get_etf_price", get_etf_price_tool)
+    reg.register("get_etf_flow", get_etf_flow_tool)
     return reg
