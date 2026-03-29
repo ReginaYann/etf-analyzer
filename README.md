@@ -4,7 +4,7 @@
 
 ## 能力概览
 
-- **自选管理**：添加 / 删除 / 查看（`MemoryStore` + JSON 持久化）
+- **自选管理**：添加 / 删除 / 查看 / 重排序；支持名称与类型（`stock` / `etf` / `auto`），持久化为 `watchlist_items`（兼容旧版纯代码列表）
 - **数据工具**：`get_etf_price`、`get_etf_flow`（Mock，可替换为真实行情 API）
 - **分析**：`RuleEngine` 阈值打分 + `DecisionSynthesizer` 与 LLM（Mock 或 OpenAI）合成结论
 - **多步 Agent**：`Planner` 根据已有信息决定下一步是拉价格、拉资金流还是进入综合分析，而非单次调用模型
@@ -14,8 +14,10 @@
 ```
 etf-analyzer/
 ├── main.py                 # 最小 Demo 入口
-├── pyproject.toml          # 包元数据与可选依赖 [llm]
-├── requirements.txt        # 说明（默认无强依赖；OpenAI 见下文）
+├── run_web.py              # FastAPI + 静态页：python run_web.py
+├── static/                 # 简单前端（自选表单、列表、分析）
+├── pyproject.toml          # 可选依赖 [llm]、[web]
+├── requirements.txt
 ├── README.md
 ├── data/                   # 运行后生成：watchlist_memory.json
 └── etf_analyzer/
@@ -33,8 +35,10 @@ etf-analyzer/
     ├── analysis/
     │   ├── rules.py        # 规则层信号与粗决策
     │   └── synthesizer.py  # 规则 + LLM 结构化输出
-    └── llm/
-        └── client.py       # MockLLMClient / OpenAILLMClient
+    ├── llm/
+    │   └── client.py       # MockLLMClient / OpenAILLMClient
+    └── web/
+        └── app.py          # FastAPI：/api/watchlist、/api/analyze 等
 ```
 
 ## 环境要求
@@ -50,7 +54,19 @@ pip install -e .
 python main.py
 ```
 
-若不安装为包，可临时设置 `PYTHONPATH` 指向项目根目录后再执行 `python main.py`。
+### Web 自选与前端
+
+安装 Web 依赖后启动（浏览器打开 <http://127.0.0.1:8000/>）：
+
+```bash
+pip install -e ".[web]"
+python run_web.py
+```
+
+- 页面：管理自选（代码、可选名称、类型）、对单标的触发分析、查看结构化结果与步进轨迹。
+- HTTP API：`GET/POST/PATCH/DELETE /api/watchlist`、`PUT /api/watchlist/reorder`、`POST /api/analyze/{code}`、`GET /api/last-analysis`，详见 <http://127.0.0.1:8000/docs>。
+
+若不安装为包，可临时设置 `PYTHONPATH` 指向项目根目录后再执行 `python main.py` / `python run_web.py`。
 
 Demo 会向自选加入 `510300`，跑一轮 Agent（先价格工具、再资金流工具、再合成），并在终端打印结构化决策与步进说明；数据写入 `data/watchlist_memory.json`。
 

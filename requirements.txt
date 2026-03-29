@@ -1,3 +1,4 @@
-# 默认零第三方依赖即可跑通 Demo。
-# 使用 OpenAI 时请: pip install openai
-# openai>=1.0.0
+# 默认零第三方依赖即可跑通 CLI Demo（main.py）。
+# Web：pip install fastapi "uvicorn[standard]"
+# OpenAI：pip install openai
+# 或：pip install -e ".[web]"  /  pip install -e ".[llm]"

@@ -1,3 +1,3 @@
-from .store import MemoryStore
+from .store import AnalysisRecord, MemoryStore, WatchlistItem
 
-__all__ = ["MemoryStore"]
+__all__ = ["AnalysisRecord", "MemoryStore", "WatchlistItem"]

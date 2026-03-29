@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>自选与分析 · ETF Agent</title>
+  <link rel="stylesheet" href="/assets/style.css" />
+</head>
+<body>
+  <header class="header">
+    <h1>自选与分析</h1>
+    <p class="sub">配置自选标的，一键运行 Agent（价格 → 资金流 → 规则/LLM 结论）</p>
+  </header>
+
+  <main class="layout">
+    <section class="card">
+      <h2>添加自选</h2>
+      <form id="form-add" class="form-row">
+        <input id="inp-code" type="text" placeholder="代码，如 510300、600000" required />
+        <input id="inp-name" type="text" placeholder="名称（可选）" />
+        <select id="inp-type">
+          <option value="auto">类型：自动</option>
+          <option value="etf">ETF</option>
+          <option value="stock">股票</option>
+        </select>
+        <button type="submit">添加</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <h2>我的自选 <button type="button" id="btn-refresh" class="btn-ghost">刷新</button></h2>
+      <div id="watchlist-empty" class="hint hidden">暂无自选，请在上方添加。</div>
+      <table class="table" id="tbl-watchlist">
+        <thead>
+          <tr>
+            <th>代码</th>
+            <th>名称</th>
+            <th>类型</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2>分析结果</h2>
+      <p id="analysis-placeholder" class="hint">点击自选行的「分析」查看结构化决策。</p>
+      <pre id="analysis-json" class="json-out hidden"></pre>
+      <details id="analysis-steps-wrap" class="hidden">
+        <summary>Agent 步进</summary>
+        <pre id="analysis-steps" class="json-out small"></pre>
+      </details>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>API 文档：<a href="/docs" target="_blank" rel="noopener">/docs</a></span>
+  </footer>
+
+  <script src="/assets/app.js"></script>
+</body>
+</html>
